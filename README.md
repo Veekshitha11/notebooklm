@@ -1,46 +1,49 @@
-# NotebookLM — AI Document Assistant
+# NotebookLLM
 
-A **RAG (Retrieval-Augmented Generation)** powered web application that lets you upload documents and ask questions about them in plain English. Answers are generated using **LLaMA 3-70B via Groq**, with context retrieved from a **Qdrant** vector database.
+**Talk to your documents. Get answers, not hallucinations.**
 
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Environment Variables](#environment-variables)
-- [Variable Name Reference](#variable-name-reference)
-- [Getting Started](#getting-started)
-- [How It Works](#how-it-works)
-- [Supported File Types](#supported-file-types)
-- [API Endpoints](#api-endpoints)
+NotebookLLM is a RAG-powered document assistant. Drop in a file, ask anything about it, and the AI responds using only what's actually in that document — no guessing, no going off-script. Every answer is grounded in your content.
 
 ---
 
-## Features
+## What It Does
 
-- Upload PDF, DOCX, DOC, CSV, PPTX, JSON, or TXT files
-- Automatic document chunking and embedding
-- Semantic vector search via Qdrant
-- Context-grounded answers from LLaMA 3 (no hallucinations)
-- Clean, responsive light-theme UI (blue & white)
-- Drag-and-drop file upload
-- Suggestion chips for quick queries
+- **Document Q&A** — ask natural language questions; get answers backed by your own file
+- **Zero hallucination policy** — the model is explicitly constrained to the uploaded document's content
+- **Multi-format support** — works with PDF, DOCX, DOC, CSV, JSON, PPTX, and TXT
+- **Local embeddings** — no third-party embedding API; vectors are generated on-server using a lightweight transformer model
+- **Polished UI** — drag-and-drop upload, live typing indicators, suggestion chips, and a responsive sidebar that collapses on mobile
 
 ---
 
 ## Tech Stack
 
-| Layer       | Technology                              |
-|-------------|------------------------------------------|
-| Frontend    | Plain HTML, CSS, Vanilla JS              |
-| Backend     | Node.js, Express.js                      |
-| AI / LLM    | Groq API → LLaMA 3.3-70B Versatile      |
-| Embeddings  | `@xenova/transformers` (all-MiniLM-L6-v2, runs locally) |
-| Vector DB   | Qdrant                                   |
-| RAG Framework | LangChain                              |
-| File Parsing | PDFLoader, DocxLoader, CSVLoader, PPTXLoader, JSONLoader, TextLoader |
+### Backend
+
+| Layer | Technology |
+|---|---|
+| Server | Node.js + Express |
+| RAG pipeline | LangChain (`@langchain/community`, `@langchain/qdrant`) |
+| Embeddings | `@xenova/transformers` — `all-MiniLM-L6-v2`, runs locally |
+| Vector store | Qdrant |
+| LLM | Groq — `llama-3.3-70b-versatile` |
+| File handling | Multer |
+| Config | dotenv + CORS |
+
+### Frontend
+
+| Layer | Technology |
+|---|---|
+| UI | Vanilla HTML, CSS, JavaScript |
+| Fonts | Google Fonts — Syne + DM Sans |
+
+### Infrastructure
+
+| Service | Purpose |
+|---|---|
+| Render | Hosts the backend (Node.js) |
+| Netlify | Serves the frontend as a static site |
+| Qdrant Cloud | Managed vector database |
 
 ---
 
@@ -48,213 +51,177 @@ A **RAG (Retrieval-Augmented Generation)** powered web application that lets you
 
 ```
 final_project/
-├── backend/
-│   ├── .env                      # Environment variables (not committed)
-│   ├── .gitignore
-│   ├── package.json
-│   ├── server.js                 # Express app entry point
-│   ├── qdrant.js                 # Qdrant collection name export
-│   ├── routes/
-│   │   ├── upload.route.js       # POST /uploads — file upload & indexing
-│   │   └── chat.route.js         # POST /chat   — query & answer
-│   ├── services/
-│   │   ├── loader.service.js     # Loads and parses uploaded files
-│   │   ├── chunk.service.js      # Splits documents into chunks
-│   │   ├── embed.service.js      # Local embedding via Xenova
-│   │   ├── vector.service.js     # Qdrant store & search operations
-│   │   └── rag.service.js        # Groq LLM call with context
-│   └── utils/
-│       └── supportedFiles.js     # List of accepted file extensions
-└── frontend/
-    ├── index.html                # Landing / home page
-    └── chat.html                 # Chat interface
+├── frontend/
+│   ├── index.html           # Landing / home page
+│   └── chat.html            # Main chat interface
+│
+└── backend/
+    ├── server.js            # App entry point — Express setup, static file serving
+    ├── package.json
+    ├── qdrant.js            # Exports the active Qdrant collection name
+    │
+    ├── routes/
+    │   ├── upload.route.js  # POST /uploads — receives file, triggers indexing
+    │   └── chat.route.js    # POST /chat — takes query, returns grounded answer
+    │
+    ├── services/
+    │   ├── loader.service.js   # Reads and parses uploaded files by extension
+    │   ├── chunk.service.js    # Splits parsed content into overlapping text chunks
+    │   ├── embed.service.js    # Converts chunks into 384-dim embedding vectors
+    │   ├── vector.service.js   # Writes to and queries Qdrant
+    │   └── rag.service.js      # Assembles context and calls the Groq LLM
+    │
+    └── utils/
+        └── supportedFiles.js   # Allowlist of accepted file extensions
 ```
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file inside the `backend/` folder. See `.env` for the template.
+Inside the `backend/` directory, create a `.env` file:
 
-| Variable           | Description                                             | Example                        |
-|--------------------|---------------------------------------------------------|--------------------------------|
-| `SERVER_PORT`      | Port the Express server runs on                         | `5000`                         |
-| `QDRANT_BASE_URL`  | Base URL of your running Qdrant instance                | `http://localhost:6333`        |
-| `QDRANT_COLLECTION`| Default Qdrant collection name (used as fallback)       | `gen_ai_assign_3`              |
-| `GROQ_SECRET_KEY`  | Your Groq API key                                       | `gsk_...`                      |
-| `HF_ACCESS_TOKEN`  | Hugging Face token (if needed for private models)       | `hf_...`                       |
-| `OPENAI_SECRET_KEY`| OpenAI key placeholder (set to `dummy` if unused)       | `dummy`                        |
-
----
-
-## Variable Name Reference
-
-This table maps **old variable names** (original code) to the **new names** used in this version, so you can easily cross-reference.
-
-### Environment Variables (.env)
-
-| Old Name          | New Name            |
-|-------------------|---------------------|
-| `PORT`            | `SERVER_PORT`       |
-| `QDRANT_URL`      | `QDRANT_BASE_URL`   |
-| `COLLECTION_NAME` | `QDRANT_COLLECTION` |
-| `GROQ_API_KEY`    | `GROQ_SECRET_KEY`   |
-| `HF_TOKEN`        | `HF_ACCESS_TOKEN`   |
-| `OPENAI_API_KEY`  | `OPENAI_SECRET_KEY` |
-
-### Code-level Variables
-
-| File                      | Old Name           | New Name              |
-|---------------------------|--------------------|-----------------------|
-| `qdrant.js`               | `COLLECTION_NAME`  | `QDRANT_COLLECTION`   |
-| `server.js`               | `PORT`             | `SERVER_PORT`         |
-| `rag.service.js`          | `client`           | `groqClient`          |
-| `rag.service.js`          | `system_prompt`    | `systemPrompt`        |
-| `rag.service.js`          | `searchedChunks`   | `retrievedChunks`     |
-| `vector.service.js`       | `docs`             | `processedDocs`       |
-| `vector.service.js`       | `searchedChunks`   | `retrievedChunks`     |
-| `upload.route.js`         | `upload`           | `fileUploader`        |
-| `upload.route.js`         | `filePath`         | `uploadedFilePath`    |
-| `upload.route.js`         | `originalName`     | `originalFileName`    |
-| `upload.route.js`         | `splittedDocs`     | `chunkedDocs`         |
-| `upload.route.js`         | `docs`             | `loadedDocs`          |
-| `chat.route.js`           | `searchedChunks`   | `retrievedChunks`     |
-| `chunk.service.js`        | `splitter`         | `textSplitter`        |
-| `chunk.service.js`        | `splittedDocs`     | `chunkedDocs`         |
-| `embed.service.js`        | `embedder`         | `embeddingPipeline`   |
-| `embed.service.js`        | `getEmbedder()`    | `getEmbeddingPipeline()` |
-| `embed.service.js`        | `vectors`          | `embeddingVectors`    |
-| `loader.service.js`       | `ext`              | `fileExtension`       |
-| `loader.service.js`       | `loader`           | `documentLoader`      |
-| `loader.service.js`       | `docs`             | `loadedDocs`          |
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js v18+
-- Qdrant running locally (or a cloud instance)
-- A valid Groq API key
-
-### 1. Start Qdrant
-
-```bash
-docker run -p 6333:6333 qdrant/qdrant
+```env
+PORT=5000
+QDRANT_URL=https://your-cluster.qdrant.io
+QDRANT_API_KEY=your_qdrant_api_key
+COLLECTION_NAME=notebookllm
+GROQ_API_KEY=your_groq_api_key
+HF_TOKEN=your_huggingface_token
 ```
 
-### 2. Install dependencies
+| Variable | How to obtain |
+|---|---|
+| `QDRANT_URL` | Qdrant Cloud dashboard → cluster detail page |
+| `QDRANT_API_KEY` | Qdrant Cloud → **API Keys** → **Create API Key** |
+| `COLLECTION_NAME` | Freely chosen — used to namespace your vector collection |
+| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) → **API Keys** |
+| `HF_TOKEN` | [huggingface.co](https://huggingface.co) → **Settings → Access Tokens** |
+
+> `.env` is gitignored by default. Never push it to version control.
+
+---
+
+## Running Locally
+
+**Prerequisites:** Node.js v18+, a Qdrant instance (cloud or local Docker)
 
 ```bash
-cd final_project/backend
+# Clone the repo
+git clone https://github.com/Veekshitha11/notebooklm
+cd your-repo/final_project
+
+# Install backend dependencies
+cd backend
 npm install
-```
 
-### 3. Configure environment
-
-```bash
-# Copy the sample and fill in your values
-cp .env .env.local
-# Edit .env with your GROQ_SECRET_KEY, QDRANT_BASE_URL, etc.
-```
-
-### 4. Start the server
-
-```bash
+# Start the dev server
 npm run dev
 ```
 
-The server starts at `http://localhost:5000`. The frontend is served automatically.
-
-### 5. Open the app
-
-Navigate to `http://localhost:5000` in your browser.
+Then visit `http://localhost:5000` — the backend serves the frontend automatically, so no separate dev server is needed.
 
 ---
 
-## How It Works
+## Deploying to Production
+
+Three services need to be wired together. Set them up in this order.
+
+### Step 1 — Qdrant Cloud
+
+1. Sign up at [cloud.qdrant.io](https://cloud.qdrant.io)
+2. Create a new cluster on the **Free tier**
+3. Copy the **Cluster URL** from the dashboard
+4. Under **API Keys**, generate a new key and save it
+
+### Step 2 — Render (Backend)
+
+1. Go to [render.com](https://render.com) → **New Web Service**
+2. Connect your GitHub repo and configure:
+
+| Field | Value |
+|---|---|
+| Root Directory | `backend` |
+| Build Command | `npm install --legacy-peer-deps` |
+| Start Command | `npm start` |
+| Instance Type | Free |
+
+3. Add all five environment variables under **Advanced**
+4. Deploy and copy the resulting URL (e.g. `https://your-app.onrender.com`)
+
+### Step 3 — Netlify (Frontend)
+
+1. Go to [netlify.com](https://netlify.com) → **Add new site → Import from Git**
+2. Configure the build:
+
+| Field | Value |
+|---|---|
+| Base directory | `frontend` |
+| Build command | *(leave blank)* |
+| Publish directory | `frontend` |
+
+3. Deploy and copy the site URL (e.g. `https://your-site.netlify.app`)
+
+### Step 4 — Connect Frontend to Backend
+
+In `frontend/chat.html`, point the API base URL at your Render deployment:
+
+```javascript
+const API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://your-app.onrender.com'; // ← replace with your Render URL
+```
+
+In `backend/server.js`, allow requests from your Netlify domain:
+
+```javascript
+app.use(cors({
+  origin: ['https://your-site.netlify.app'], // ← replace with your Netlify URL
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}));
+```
+
+Push both changes — Render and Netlify will redeploy automatically.
+
+---
+
+## How the RAG Pipeline Works
 
 ```
 User uploads file
-      │
-      ▼
-loadDocuments()       ← Parses file by extension (PDF/DOCX/CSV/etc.)
-      │
-      ▼
-chunkDocuments()      ← Splits into 1000-char chunks (200 overlap)
-      │
-      ▼
-embeddings.embedDocuments()  ← Local Xenova MiniLM embeddings
-      │
-      ▼
-QdrantVectorStore     ← Stores vectors in a new per-file collection
-      │
-      ▼
+       ↓
+LangChain loads & parses it
+       ↓
+Split into 1000-char chunks (200-char overlap)
+       ↓
+Each chunk → 384-dim vector via all-MiniLM-L6-v2 (on-server)
+       ↓
+Vectors stored in Qdrant collection
+       ↓
 User asks a question
-      │
-      ▼
-embeddings.embedQuery()      ← Embeds the query
-      │
-      ▼
-vectorStore.asRetriever()    ← Top-3 semantically similar chunks
-      │
-      ▼
-generateAnswer()      ← Groq LLaMA 3-70B with context → answer
-      │
-      ▼
-Response sent to frontend
+       ↓
+Question embedded → top 3 chunks retrieved from Qdrant
+       ↓
+Chunks passed as context to Groq (llama-3.3-70b-versatile)
+       ↓
+Grounded answer returned to user
 ```
+
+The model is instructed to answer only from the retrieved chunks — if the answer isn't in the document, it says so.
 
 ---
 
 ## Supported File Types
 
-| Extension | Loader Used         |
-|-----------|---------------------|
-| `.pdf`    | PDFLoader           |
-| `.csv`    | CSVLoader           |
-| `.docx`   | DocxLoader          |
-| `.doc`    | DocxLoader (doc mode)|
-| `.json`   | JSONLoader          |
-| `.pptx`   | PPTXLoader          |
-| `.txt`    | TextLoader          |
+`.pdf` · `.docx` · `.doc` · `.csv` · `.json` · `.pptx` · `.txt`
 
 ---
 
-## API Endpoints
+## Things to Know
 
-### `POST /uploads`
+**Cold starts** — Render's free tier idles after 15 minutes of inactivity. The first request may take up to 30 seconds while the server wakes up. Subsequent requests are fast.
 
-Upload and index a document.
+**One collection per file** — each upload creates a fresh Qdrant collection. The app always queries the most recently uploaded document; there's no multi-document memory across sessions.
 
-**Request:** `multipart/form-data` with field `file`
-
-**Response:**
-```json
-{ "success": true, "message": "File Uploaded & Indexed Successfully" }
-```
-
----
-
-### `POST /chat`
-
-Ask a question about the indexed document.
-
-**Request:**
-```json
-{ "query": "What are the key findings?" }
-```
-
-**Response:**
-```json
-{ "success": true, "answer": "Based on the document, the key findings are..." }
-```
-
----
-
-## Notes
-
-- Each file upload creates its own Qdrant collection (named `<filename>-<timestamp>`). Only the **most recently uploaded** file is active for chat at any time.
-- The embedding model (`all-MiniLM-L6-v2`) runs **locally** via `@xenova/transformers` — no external API call needed for embeddings.
-- Answers are strictly grounded in the uploaded document. If information is not present, the AI responds: *"Answer not found in uploaded document."*
+**No embedding API costs** — vectors are generated entirely on the backend server using `@xenova/transformers`. The only external API calls are to Groq for the final LLM response.
