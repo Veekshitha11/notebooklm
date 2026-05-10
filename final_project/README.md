@@ -48,7 +48,7 @@ A **RAG (Retrieval-Augmented Generation)** powered web application that lets you
 
 ```
 final_project/
-├── backend/
+├── backend/ 
 │   ├── .env                      # Environment variables (not committed)
 │   ├── .gitignore
 │   ├── package.json
