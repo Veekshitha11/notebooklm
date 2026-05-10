@@ -95,7 +95,7 @@ HF_TOKEN=your_huggingface_token
 | `QDRANT_URL` | Qdrant Cloud dashboard → cluster detail page |
 | `QDRANT_API_KEY` | Qdrant Cloud → **API Keys** → **Create API Key** |
 | `COLLECTION_NAME` | Freely chosen — used to namespace your vector collection |
-| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) → **API Keys** |
+| `GROQ_SECRET_KEY` | [console.groq.com](https://console.groq.com) → **API Keys** |
 | `HF_TOKEN` | [huggingface.co](https://huggingface.co) → **Settings → Access Tokens** |
 
 > `.env` is gitignored by default. Never push it to version control.
