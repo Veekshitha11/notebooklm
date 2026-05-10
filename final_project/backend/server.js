@@ -41,6 +41,6 @@ app.listen(PORT, () => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server Running on http://localhost:${SERVER_PORT}`);
-  console.log(`Frontend available at http://localhost:${SERVER_PORT}`);
+  console.log(`Server Running on http://localhost:${PORT}`);
+  console.log(`Frontend available at http://localhost:${PORT}`);
 });
