@@ -7,6 +7,8 @@ export async function storeDocuments(processedDocs, collectionName) {
     embeddings,
     {
       url: process.env.QDRANT_BASE_URL,
+      apiKey: process.env.QDRANT_API_KEY,
+
       collectionName
     }
   );
@@ -19,6 +21,7 @@ export async function searchDocuments(userQuery) {
     embeddings,
     {
       url: process.env.QDRANT_BASE_URL,
+      apiKey: process.env.QDRANT_API_KEY,
       collectionName: global.currentCollection
     }
   );
